@@ -17,7 +17,7 @@ public class EmailController {
     public String enviarEmail() {
         try {
             SimpleMailMessage mensagem = new SimpleMailMessage();
-            emailService.enviarEmailSimples("viniciustjaeger@gmail.com", "Assunto", "Corpo");
+            emailService.enviarEmailSimples("example@gmail.com", "Assunto", "Corpo");
 
             return "E-mail enviado com sucesso!";
         } catch (Exception e) {
