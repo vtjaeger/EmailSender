@@ -1,42 +1,43 @@
 package ms.com.email.service;
 
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
-
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 @Service
 public class EmailService {
-    @Autowired
-    private JavaMailSender javaMailSender;
-    LerConteudoCelula leitor = new LerConteudoCelula();
-    public void enviarEmail(String destinatario, String assunto, String corpo, String caminhoAnexo) {
-        MimeMessage mensagem = javaMailSender.createMimeMessage();
+    public List<String> filtrarColunaA(MultipartFile arquivo) {
+        List<String> resultados = new ArrayList<>();
 
-        try {
-            MimeMessageHelper helper = new MimeMessageHelper(mensagem, true);
-            helper.setFrom("viniciustoldojaeger@outlook.com");
-            helper.setTo(destinatario);
-            helper.setSubject(assunto);
+        try (InputStream inputStream = arquivo.getInputStream()) {
+            Workbook workbook = new XSSFWorkbook(inputStream);
+            Sheet sheet = workbook.getSheetAt(0);
 
-            String conteudoTabela = leitor.lerConteudoTabela("C:\\Users\\Pichau\\Desktop\\teste.xlsx");
+            Iterator<Row> rowIterator = sheet.iterator();
+            while (rowIterator.hasNext()) {
+                Row row = rowIterator.next();
+                Cell cell = row.getCell(0);
 
-            String corpoComTabela = corpo + "\n\nConteúdo da Tabela:\n\n" + conteudoTabela;
-            helper.setText(corpoComTabela);
+                if (cell != null && cell.getCellType() == CellType.STRING) {
+                    String valorCelula = cell.getStringCellValue();
+                    if (valorCelula.equalsIgnoreCase("Vinicius")) {
+                        resultados.add(valorCelula);
+                    }
+                }
+            }
 
-            javaMailSender.send(mensagem);
-        } catch (MessagingException e) {
+            workbook.close();
+        } catch (IOException e) {
             e.printStackTrace();
-            throw new RuntimeException("Erro ao enviar o e-mail: " + e.getMessage());
         }
+
+        return resultados;
     }
 }
-
-
-
