@@ -1,43 +1,50 @@
 package ms.com.email.service;
 
-import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.StringJoiner;
 
 @Service
 public class EmailService {
-    public List<String> filtrarColunaA(MultipartFile arquivo) {
-        List<String> resultados = new ArrayList<>();
+    public String convertExcelToString(MultipartFile file) throws IOException {
+        try (Workbook workbook = new XSSFWorkbook(file.getInputStream())) {
 
-        try (InputStream inputStream = arquivo.getInputStream()) {
-            Workbook workbook = new XSSFWorkbook(inputStream);
-            Sheet sheet = workbook.getSheetAt(0);
+            Sheet sheet = workbook.getSheetAt(0); // primeira linha do excel
 
-            Iterator<Row> rowIterator = sheet.iterator();
-            while (rowIterator.hasNext()) {
-                Row row = rowIterator.next();
-                Cell cell = row.getCell(0);
+            StringJoiner stringJoiner = new StringJoiner("\n"); // stringJoiner para juntar as linhas
 
-                if (cell != null && cell.getCellType() == CellType.STRING) {
-                    String valorCelula = cell.getStringCellValue();
-                    if (valorCelula.equalsIgnoreCase("Vinicius")) {
-                        resultados.add(valorCelula);
+            // a cada linha da planilha
+            for (Row row : sheet) {
+                StringJoiner rowJoiner = new StringJoiner("\t"); // nova stringJoiner para juntar as linhas
+                for (Cell cell : row) {
+                    switch (cell.getCellType()) {
+
+                        // adiciona o valor da celula na linha
+                        case STRING:
+                            rowJoiner.add(cell.getStringCellValue());
+                            break;
+                        case NUMERIC:
+                            rowJoiner.add(String.valueOf(cell.getNumericCellValue()));
+                            break;
+                        case BOOLEAN:
+                            rowJoiner.add(String.valueOf(cell.getBooleanCellValue()));
+                            break;
+                        default:
+                            rowJoiner.add("");
                     }
                 }
+                // adiciona a celula na linha
+                stringJoiner.add(rowJoiner.toString());
             }
 
-            workbook.close();
-        } catch (IOException e) {
-            e.printStackTrace();
+            return stringJoiner.toString();
         }
-
-        return resultados;
     }
 }
